@@ -1,0 +1,18 @@
+{
+  "name": "controller-id-analysis-tool",
+  "version": "1.0.0",
+  "description": "Controller ID数据分析工具",
+  "main": "netlify-server.js",
+  "scripts": {
+    "start": "node netlify-server.js",
+    "dev": "node netlify-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+} 

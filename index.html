@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晶圆映射工具</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- 引入Chart.js自动加载脚本 -->
+    <script src="js/chart-alert.js"></script>
+    <!-- 引入PapaParse库用于解析CSV文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- 引入SheetJS库用于导出Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- 尝试加载本地Chart.js库 -->
+    <script src="js/lib/chart.min.js"></script>
+    <script src="js/lib/chartjs-chart-matrix.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>晶圆映射工具</h1>
+        </div>
+    </header>
+    
+    <main>
+        <div class="container">
+            <!-- 状态消息显示区域 -->
+            <div id="status-message" class="status-message" style="display: none;"></div>
+            
+            <!-- 文件上传区域 -->
+            <section class="card file-upload">
+                <div class="section-header">
+                    <h2>上传数据文件</h2>
+                </div>
+                
+                <div class="file-input-container">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="csv-file" accept=".csv,.xlsx,.xls">
+                        <label for="csv-file" class="custom-file-upload">
+                            <span class="material-icons">upload_file</span> 选择文件
+                        </label>
+                    </div>
+                    <div class="file-name" id="file-name">未选择文件</div>
+                </div>
+                
+                <div class="controls">
+                    <button id="upload-btn">
+                        <span class="material-icons">cloud_upload</span> 上传并分析
+                    </button>
+                    <button id="preview-btn">
+                        <span class="material-icons">visibility</span> 预览文件
+                    </button>
+                </div>
+                
+                <div id="file-info" class="file-info"></div>
+                
+                <div id="file-preview-container" style="display: none;">
+                    <div id="file-preview" class="file-preview"></div>
+                </div>
+            </section>
+            
+            <!-- 参考坐标系选择部分 -->
+            <section class="card">
+                <div class="section-header">
+                    <h2>参考坐标系</h2>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="predefined-coordinates">选择预定义坐标</label>
+                        <select id="predefined-coordinates">
+                            <option value="">不使用预定义坐标</option>
+                            <option value="INANDM_controller">INANDM控制器坐标</option>
+                            <option value="INAND_WaferMap_8x8">8x8标准晶圆</option>
+                            <option value="INAND_WaferMap_20x20">20x20大型晶圆</option>
+                        </select>
+                    </div>
+                    
+                    <button id="load-predefined-btn">
+                        <span class="material-icons">download</span> 加载预定义坐标
+                    </button>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="reference-file-upload">或上传自定义参考文件</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="reference-file-upload" accept=".xlsx,.xls,.csv">
+                            <label for="reference-file-upload" class="custom-file-upload">
+                                <span class="material-icons">upload_file</span> 选择参考文件
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button id="upload-reference-file-btn">
+                        <span class="material-icons">upload</span> 上传参考文件
+                    </button>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="reference-sheet">工作表</label>
+                        <select id="reference-sheet" disabled>
+                            <option value="">请先上传参考文件</option>
+                        </select>
+                    </div>
+                    
+                    <button id="load-reference-btn" disabled>
+                        <span class="material-icons">check</span> 加载参考坐标
+                    </button>
+                </div>
+                
+                <div id="reference-info" class="file-info">选择预定义坐标或上传自定义参考文件</div>
+                <div id="reference-preview-container" style="display: none;">
+                    <div id="reference-preview" class="file-preview"></div>
+                </div>
+            </section>
+            
+            <!-- 晶圆选择区域 -->
+            <section class="card">
+                <div class="section-header">
+                    <h2>晶圆选择</h2>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="asic-select">ASIC批次</label>
+                        <select id="asic-select"></select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="wafer-select">晶圆编号</label>
+                        <select id="wafer-select"></select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="failure-code-select">故障代码</label>
+                        <select id="failure-code-select">
+                            <option value="all">所有故障代码</option>
+                            <option value="pass">通过 (SB=0)</option>
+                            <option value="fail">失败 (SB≠0)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">生成晶圆映射</div>
+                        <div class="card-body">
+                            <button id="generate-map-btn" class="btn btn-primary mt-2" disabled>生成单个映射</button>
+                            <button id="generate-all-map-btn" class="btn btn-secondary mt-2" disabled>合并Mapping</button>
+                            <button id="generate-by-asic-btn" class="btn btn-info mt-2" disabled>按ASIC分批Mapping</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 映射结果显示区域 -->
+            <section class="card">
+                <div class="section-header">
+                    <h2>映射结果</h2>
+                </div>
+                
+                <div id="wafer-map-container"></div>
+                
+                <div id="stats"></div>
+            </section>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>晶圆映射工具 v2.5 | 优化版本</p>
+        </div>
+    </footer>
+    
+    <script src="js/app.js"></script>
+    <script src="js/performance-test.js"></script>
+</body>
+</html> 
