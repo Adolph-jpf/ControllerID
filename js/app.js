@@ -1149,7 +1149,7 @@ function showReferencePreview(data) {
     // 添加简单的散点图预览
     previewHTML += `<div class="reference-graph">
         <h4>参考坐标位置图</h4>
-        <canvas id="reference-preview-chart" width="300" height="300"></canvas>
+        <div id="reference-preview-chart" style="width: fit-content; margin: 0 auto; background-color: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"></div>
     </div></div>`;
     
     referencePreviewDiv.innerHTML = previewHTML;
@@ -1161,15 +1161,18 @@ function showReferencePreview(data) {
 
 // 绘制参考坐标预览图
 function drawReferencePreviewChart(data) {
-    const canvas = document.getElementById('reference-preview-chart');
-    if (!canvas || !data || data.length === 0) return;
-    
+    const container = document.getElementById('reference-preview-chart');
+    if (!container || !data || data.length === 0) return;
+
+    // 清除旧的canvas
+    container.innerHTML = '';
+
     // 规范化坐标数据
     const normalizedData = data.map(point => ({
         x: point.x !== undefined ? point.x : point.X,
         y: point.y !== undefined ? point.y : point.Y
     }));
-    
+
     // 获取X和Y的范围
     const xValues = normalizedData.map(point => point.x);
     const yValues = normalizedData.map(point => point.y);
@@ -1178,95 +1181,52 @@ function drawReferencePreviewChart(data) {
     const xMax = Math.max(...xValues);
     const yMin = Math.min(...yValues);
     const yMax = Math.max(...yValues);
-    
-    // 创建Chart
-    if (window.referenceChart) {
-        window.referenceChart.destroy();
-    }
-    
-    window.referenceChart = new Chart(canvas, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-                label: '参考坐标',
-                data: normalizedData,
-                backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                pointStyle: 'rect',
-                pointRadius: 5,
-                pointHoverRadius: 7
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        title: function(context) {
-                            if (!context || !context[0] || !context[0].raw) {
-                                return "";
-                            }
-                            const point = context[0].raw;
-                            return `坐标: X=${point.x || 0}, Y=${point.y || 0}`;
-                        }
-                    }
-                },
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: '参考坐标预览',
-                    font: {
-                        size: 14
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    type: 'linear',
-                    position: 'bottom',
-                    min: xMin - 0.5,
-                    max: xMax + 0.5,
-                    title: {
-                        display: true,
-                        text: 'X坐标'
-                    },
-                    ticks: {
-                        stepSize: 1
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)',
-                        lineWidth: 1,
-                        drawBorder: true
-                    }
-                },
-                y: {
-                    type: 'linear',
-                    min: yMin - 0.5,
-                    max: yMax + 0.5,
-                    reverse: true, // Y轴从上到下增加
-                    title: {
-                        display: true,
-                        text: 'Y坐标'
-                    },
-                    ticks: {
-                        stepSize: 1
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)',
-                        lineWidth: 1,
-                        drawBorder: true
-                    }
-                }
-            }
-        }
+
+    // 创建网格容器
+    const gridContainer = document.createElement('div');
+    gridContainer.style.display = 'grid';
+    gridContainer.style.gap = '1px';
+    gridContainer.style.backgroundColor = '#f0f0f0';
+    gridContainer.style.padding = '1px';
+    gridContainer.style.width = 'fit-content';
+    gridContainer.style.margin = '0 auto';
+
+    // 设置网格大小
+    const cellSize = 4; // 固定单元格大小为4像素
+    const xRange = xMax - xMin + 1;
+    const yRange = yMax - yMin + 1;
+
+    // 设置网格模板
+    gridContainer.style.gridTemplateColumns = `repeat(${xRange}, ${cellSize}px)`;
+    gridContainer.style.gridTemplateRows = `repeat(${yRange}, ${cellSize}px)`;
+
+    // 创建坐标点映射
+    const coordMap = new Map();
+    normalizedData.forEach(point => {
+        coordMap.set(`${point.x},${point.y}`, true);
     });
-    
-    // 调整点的大小
-    window.referenceChart.options.elements.point.radius = 4;
-    window.referenceChart.options.elements.point.hoverRadius = 6;
-    window.referenceChart.update();
+
+    // 创建网格单元格
+    for (let y = yMin; y <= yMax; y++) {
+        for (let x = xMin; x <= xMax; x++) {
+            const cell = document.createElement('div');
+            cell.style.width = `${cellSize}px`;
+            cell.style.height = `${cellSize}px`;
+            
+            // 如果是参考坐标点，设置为蓝色，否则为浅灰色
+            if (coordMap.has(`${x},${y}`)) {
+                cell.style.backgroundColor = 'rgba(54, 162, 235, 0.7)';
+                cell.title = `坐标: (${x}, ${y})`;
+            } else {
+                cell.style.backgroundColor = '#f8f8f8';
+            }
+
+            gridContainer.appendChild(cell);
+        }
+    }
+
+    // 将网格容器添加到预览区域
+    container.appendChild(gridContainer);
 }
 
 // 预览CSV文件
