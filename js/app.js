@@ -1234,6 +1234,11 @@ function drawReferencePreviewChart(data) {
                     },
                     ticks: {
                         stepSize: 1
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)',
+                        lineWidth: 1,
+                        drawBorder: true
                     }
                 },
                 y: {
@@ -1247,11 +1252,21 @@ function drawReferencePreviewChart(data) {
                     },
                     ticks: {
                         stepSize: 1
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)',
+                        lineWidth: 1,
+                        drawBorder: true
                     }
                 }
             }
         }
     });
+    
+    // 调整点的大小
+    window.referenceChart.options.elements.point.radius = 4;
+    window.referenceChart.options.elements.point.hoverRadius = 6;
+    window.referenceChart.update();
 }
 
 // 预览CSV文件
