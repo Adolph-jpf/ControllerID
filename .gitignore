@@ -11,10 +11,13 @@ Thumbs.db
 # 依赖目录
 node_modules/
 package-lock.json
+yarn.lock
 
 # 日志文件
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # 环境变量
 .env
@@ -27,4 +30,15 @@ build/
 
 # 临时文件
 *.tmp
-*.temp 
+*.temp
+
+# 测试数据
+test/
+*.csv
+*.xlsx
+*.xls
+
+# 其他
+*.bak
+*.old
+webpage_output.txt 
